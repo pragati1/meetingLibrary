@@ -83,13 +83,14 @@ public class Scan {
 	  	oxml = new Objects_xml();
 	    UEP = new Update_Editor_POP();
 	    eQueue = new EventsQueue();
-		int pop_flag_1 = 0; //Flag to indicate the first load of the browser
-			
+		int navFlag = 0; //Flag to indicate the first load of the browser
+				
 		et = new Event_tracker(d1,oxml,eQueue);
 		eventProcessor = new EventsProcessor(d1,oxml,eQueue);
 		
 		et.rcrd_mode = rcrd_mode;
 		et.UEP = UEP;
+		eventProcessor.UEP = UEP;
 		//et.ue = UE;
 		//et.UEC = UEC;
 		
@@ -114,12 +115,24 @@ public class Scan {
 				}
 			
 				int win_ind = 0;
-							
+				
+				
 				while(wnd_itr.hasNext()){
 					String wnd_hndlr = (String) wnd_itr.next();
 					win_ind = win_ind + 1;
 					Cookie ck_pg = d1.manage().getCookieNamed(wnd_hndlr);
 				
+					//To check whether the new page has been loaded by navigation or direct load
+            		Cookie ck_nav = d1.manage().getCookieNamed("nav_flag");
+                    if(ck_nav==null){
+                    	eQueue.add("launch%=%" + d1.getCurrentUrl() + "<>" + d1.getTitle());
+                    	//UE.update_page(url1);
+                    	js_1.executeScript("document.cookie=\"nav_flag=1;" + cookieXpiry + "\" ");
+                    	navFlag = 0;
+                    	
+                    }
+					
+					
 					if(ck_pg !=null){
 						if(ck_pg.getValue().equalsIgnoreCase("0")){			//checks the value of cookie with the name of window handle
 							iflag=1;										//if it is 0, it denotes page has been refreshed
@@ -130,16 +143,23 @@ public class Scan {
 					if(ck_pg==null){	//Check whether the cookie exists with the name of window handle. //if not, it denotes that the window is newly created one
 						js_1.executeScript("document.cookie=\"" + wnd_hndlr + "=1;" + cookieXpiry + "\";");	            	    
 						js_1.executeScript("window.onunload=callback;function callback(e){document.cookie=\"" + wnd_hndlr +"=0;" + cookieXpiry + "\";};");
+						iflag=1;						
 					}
+					
 					if(iflag==1){
+						if(navFlag==1){
+							eQueue.add("pgload%=%" + d1.getCurrentUrl() + "<>" + d1.getTitle());
+						}						
 						eenabler.setEvents(Integer.toString(win_ind));  //Set javascript events in the page
+						navFlag = 1;
+						iflag=0;
 					}
 				}
 			}
 			catch(org.openqa.selenium.WebDriverException ex2){
         		record = false;
                 oxml.save_xml();
-                UEP.createMethodAtExit(pop_cu);
+                UEP.createMethodAtExit();
                 UEP.createTestClass();
 			}
 		}              

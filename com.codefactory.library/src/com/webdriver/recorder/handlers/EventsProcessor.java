@@ -9,6 +9,7 @@ public class EventsProcessor extends Thread{
 	public EventsQueue eQueue = null;
 	public WebDriver driver = null;
 	public Objects_xml objectsXml = null;
+	private Page_Class pClass = null;
 	
 	private String rcrd_id = "";
 	private String rcrd_name = "";
@@ -31,11 +32,14 @@ public class EventsProcessor extends Thread{
 	public static String window_id = "0";
 	public static String frame_id = "-1";
 	
+	private String curClsName;
+	private String prevClsName;
 	
-	public EventsProcessor(WebDriver d, Objects_xml oxml, EventsQueue evQueue){
+	public EventsProcessor(WebDriver d, Objects_xml oxml, EventsQueue evQueue) throws Exception{
 		eQueue = evQueue;
 		driver = d;
 		objectsXml = oxml;
+		pClass = new Page_Class(d);		
 	}
 		
 	public void run(){
@@ -61,7 +65,7 @@ public class EventsProcessor extends Thread{
 	}
 	
 	private void processEvents(String eventType, String eleProp) throws Exception{
-		
+				
 		if(eventType.equalsIgnoreCase("clk_event")){
 			set_rcrd_values(eleProp, "clk_event");
 			String obj_node = objectsXml.chk_xml_node(act_pgname, rcrd_id,
@@ -73,9 +77,8 @@ public class EventsProcessor extends Thread{
 			} else {
 				obj_nm = obj_node;
 			}
-			if (rcrd_mode.equalsIgnoreCase("pop")) {
-				UEP.update_click(obj_nm);			
-			}
+			
+			UEP.update_click(obj_nm);						
 			reset_values();
 		}else if(eventType.equalsIgnoreCase("txt_event")){
 			set_rcrd_values(eleProp, "txt_event");
@@ -88,11 +91,8 @@ public class EventsProcessor extends Thread{
 			} else {
 				obj_nm = obj_node;
 			}
-
-			if (rcrd_mode.equalsIgnoreCase("pop")) {
-				UEP.update_sendkeys(obj_nm, txt_value);
-			}
-
+			
+			UEP.update_sendkeys(obj_nm, txt_value);
 			reset_values();
 		}
 		else if(eventType.equalsIgnoreCase("tarea_event")){
@@ -106,11 +106,8 @@ public class EventsProcessor extends Thread{
 			} else {
 				obj_nm = obj_node;
 			}
-
-			if (rcrd_mode.equalsIgnoreCase("pop")) {
-				UEP.update_sendkeys(obj_nm, txt_value);
-			}
-
+			
+			UEP.update_sendkeys(obj_nm, txt_value);
 			reset_values();
 		}
 		else if(eventType.equalsIgnoreCase("sel_event")){
@@ -123,11 +120,9 @@ public class EventsProcessor extends Thread{
 						xpath_idRelative, act_pgname, "select");
 			} else {
 				obj_nm = obj_node;
-			}
-			if (rcrd_mode.equalsIgnoreCase("pop")) {
-				UEP.update_sendkeys(obj_nm, txt_value);
-			}
-
+			}			
+			
+			UEP.update_sendkeys(obj_nm, txt_value);			
 			reset_values();
 		}
 		else if(eventType.equalsIgnoreCase("lnk_event")){
@@ -140,10 +135,8 @@ public class EventsProcessor extends Thread{
 			} else {
 				obj_nm = obj_node;
 			}
-
-			if (rcrd_mode.equalsIgnoreCase("pop")) {
-				UEP.update_linkclick(rcrd_lnktext);
-			}
+			
+			UEP.update_linkclick(rcrd_lnktext);
 			reset_values();
 		}
 		else if(eventType.equalsIgnoreCase("btn_event")){
@@ -157,13 +150,32 @@ public class EventsProcessor extends Thread{
 			} else {
 				obj_nm = obj_node;
 			}
-
-			if (rcrd_mode.equalsIgnoreCase("pop")) {
-				UEP.update_click(obj_nm);
-			}			
+			
+			UEP.update_click(obj_nm);			
 			reset_values();
+		} 
+		else if(eventType.equalsIgnoreCase("launch")){
+			String pgUrl = eleProp.split("<>")[0];
+			String pgTitle = eleProp.split("<>")[1];
+			act_pgname = objectsXml.chk_pg_node(pgTitle, pgUrl);
+			if(act_pgname.equalsIgnoreCase("-1")){
+				act_pgname = objectsXml.generate_page_node(pgTitle, pgUrl);
+			}
+			curClsName = pClass.create_class(act_pgname, pgTitle, pgUrl);
+			UEP.update_page(pgUrl);
+			UEP.update_frstPg(curClsName);			
 		}
-		
+		else if(eventType.equalsIgnoreCase("pgload")){
+			String pgUrl = eleProp.split("<>")[0];
+			String pgTitle = eleProp.split("<>")[1];
+			prevClsName = curClsName;
+			act_pgname = objectsXml.chk_pg_node(pgTitle, pgUrl);
+			if(act_pgname.equalsIgnoreCase("-1")){
+				act_pgname = objectsXml.generate_page_node(pgTitle, pgUrl);
+			}
+			curClsName = pClass.create_class(act_pgname, pgTitle, pgUrl);
+			UEP.create_method(prevClsName, curClsName);
+		}
 		
 	}
 	

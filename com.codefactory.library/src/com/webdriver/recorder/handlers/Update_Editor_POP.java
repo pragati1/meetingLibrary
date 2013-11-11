@@ -63,6 +63,9 @@ public class Update_Editor_POP {
     private StringBuffer testClsBuffer = null;
     private IPackageFragment pack = null;
     
+    public String curClass;
+    
+    
     String projectLoc = "C:\\Users\\vvelayudham\\workspaceC\\MigratorTest";
 	
 	String testClassPkg = projectLoc + "\\src\\com\\migrator\\testclass" ;
@@ -164,34 +167,48 @@ public class Update_Editor_POP {
 		testClsBuffer.append(data + System.getProperty("line.separator"));		
 	}
 	
-	public void update_frstPg(ICompilationUnit cu1) throws Exception{
-		String strClass = cu1.getElementName();
-		String[] arr_clsnm = strClass.split("\\.");
-		String Clsnm = arr_clsnm[0];
-		update_contents("\t" + Clsnm + " " + Clsnm+"_1 = new "+ Clsnm+"(driver,by1);");
-		obj_map.put(Clsnm, Clsnm+"_1");
+	public void update_frstPg(String clsName) throws Exception{
+		//String strClass = cu1.getElementName();
+		//String[] arr_clsnm = strClass.split("\\.");
+		//String Clsnm = arr_clsnm[0];
+		update_contents("\t" + clsName + " " + clsName +"_1 = new "+ clsName +"(driver,by1);");
+		obj_map.put(clsName, clsName+"_1");
 	}
 
-	public void create_method(ICompilationUnit cu, String clsnm) throws Exception{
+	public void create_method(String prevClsNm, String curClsNm) throws Exception{
 		//pop_cu = cu;
-		
+			
+			curClass = curClsNm;
+			String args = "";
+			String arg_vals = "";
 			String mtd_name = "-1";//chk_method(type,ld_clsnm);
-			if(mtd_name.equalsIgnoreCase("-1")){								
-				mtd_buffer.insert(0, "public void" +" Action_1()" + "throws ParserConfigurationException, SAXException, IOException {" + System.getProperty("line.separator"));
+			
+			if(mtd_name.equalsIgnoreCase("-1")){												
+								
+				for(int i=0;i<arg_map.size();i++){
+					args = args + "String data_" + i + ",";
+					arg_vals = arg_vals + "\""+ arg_map.get(i) + "\",";
+					if(i==arg_map.size()-1){
+						args = args.substring(0, args.length()-1);
+						arg_vals = arg_vals.substring(0,arg_vals.length()-1);
+					}
+				}
+				
+				mtd_buffer.insert(0, "public void" +" Action_1(" + args + ")" + "throws ParserConfigurationException, SAXException, IOException {" + System.getProperty("line.separator"));
 				mtd_buffer.append("\treturn new Page_1(driver, by1);" + System.getProperty("line.separator"));
 				mtd_buffer.append("}");
 				
-				BufferedReader br = new BufferedReader(new FileReader(libClassPkg + "\\Page1" + ".java"));
+				BufferedReader br = new BufferedReader(new FileReader(libClassPkg + "\\" + curClsNm + ".java"));
 				StringBuffer clsBuffer = new StringBuffer();
 				
 				String sClsData;
 				while ((sClsData = br.readLine())!=null){
-					clsBuffer.append(sClsData);
+					clsBuffer.append(sClsData+ System.getProperty("line.separator"));
 				}
 				
 				clsBuffer.append(mtd_buffer);
 				
-				BufferedWriter pgClsOut = new BufferedWriter(new FileWriter(libClassPkg + "\\" + "Page1.java"));
+				BufferedWriter pgClsOut = new BufferedWriter(new FileWriter(libClassPkg + "\\" + prevClsNm + ".java"));
 				String testText = clsBuffer.toString();
 				pgClsOut.write(testText);
 				pgClsOut.close();
@@ -202,11 +219,11 @@ public class Update_Editor_POP {
 			}
 			String obj_name = "-1";//chk_object(ld_clsnm);
 			if(obj_name.equalsIgnoreCase("-1")){
-				//update_contents("\t"+ld_clsnm + " " + ld_clsnm+"_1 = " + cr_clsnm + "_1."+ mtd_name +"("+ arg_vals + ");");
-				//obj_map.put(ld_clsnm, ld_clsnm + "_1");
+				update_contents("\t"+ curClsNm + " " + curClsNm+"_1 = " + prevClsNm + "_1."+ mtd_name +"("+ arg_vals + ");");
+				obj_map.put(curClsNm, curClsNm + "_1");
 			}
 			else{
-				//update_contents("\t"+ obj_name + " = "+ cr_clsnm + "_1."+mtd_name +"(" + arg_vals + ");");
+				update_contents("\t"+ obj_name + " = "+ curClsNm + "_1."+mtd_name +"(" + arg_vals + ");");
 			}
 			mtd_buffer = new StringBuffer();
 		
@@ -214,20 +231,45 @@ public class Update_Editor_POP {
 		arg_ind = 0;
 	}
 	
-	public void createMethodAtExit(ICompilationUnit cu) throws Exception{
+	public void createMethodAtExit() throws Exception{
 		if (mtd_buffer.length()!=0){
-			pop_cu = cu;
+			//pop_cu = cu;
 			
-				String mtd_name = "-1";//chk_method(type,"void");
-				if(mtd_name.equalsIgnoreCase("-1")){								
-					mtd_buffer.insert(0, "public void" +" Action_1()" + " throws ParserConfigurationException, SAXException, IOException {" + System.getProperty("line.separator"));					
-					mtd_buffer.append("}");
-					
-					
-					mtd_name= "Action_1";
-				}				
-				//update_contents("\t"+ cr_clsnm + "_1." + mtd_name +"(" + arg_vals + ");");				
-				mtd_buffer = new StringBuffer();
+			String args = "";
+			String arg_vals = "";
+			for(int i=0;i<arg_map.size();i++){
+				args = args + "String data_" + i + ",";
+				arg_vals = arg_vals + "\""+ arg_map.get(i) + "\",";
+				if(i==arg_map.size()-1){
+					args = args.substring(0, args.length()-1);
+					arg_vals = arg_vals.substring(0,arg_vals.length()-1);
+				}
+			}			
+			String mtd_name = "-1";//chk_method(type,"void");
+			if(mtd_name.equalsIgnoreCase("-1")){								
+				mtd_buffer.insert(0, "public void" +" Action_1(" + args + ")" + " throws ParserConfigurationException, SAXException, IOException {" + System.getProperty("line.separator"));					
+				mtd_buffer.append("}");
+				curClass = "Welcome_Page";
+				BufferedReader br = new BufferedReader(new FileReader(libClassPkg + "\\" + curClass + ".java"));
+				StringBuffer clsBuffer = new StringBuffer();
+																
+				String sClsData;
+				while ((sClsData = br.readLine())!=null){
+					clsBuffer.append(sClsData + System.getProperty("line.separator"));
+				}
+				
+				clsBuffer.append(mtd_buffer);
+				
+				BufferedWriter pgClsOut = new BufferedWriter(new FileWriter(libClassPkg + "\\" + curClass + ".java"));
+				String testText = clsBuffer.toString();
+				pgClsOut.write(testText);
+				pgClsOut.close();
+				
+				mtd_name= "Action_1";
+			}				
+			
+			update_contents("\t"+ "curClsNm" + "_1." + mtd_name +"(" + arg_vals + ");");				
+			mtd_buffer = new StringBuffer();
 			}
 			arg_map = new HashMap();
 			arg_ind = 0;

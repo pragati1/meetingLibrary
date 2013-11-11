@@ -35,7 +35,7 @@ public class Page_Class {
 		this.d1 = d;
 	}
 	
-	public ICompilationUnit create_class(String Clsnm, String title, String url) throws Exception{
+	public String create_class(String Clsnm, String title, String url) throws Exception{
 		
 		 	ICompilationUnit ichk_unit = null;//chk_class(pack,url,title);
 		   if(ichk_unit==null){
@@ -68,14 +68,15 @@ public class Page_Class {
 			   buffer.append("\t\t}");
 			   buffer.append(System.getProperty("line.separator")+"}");
 			   
-			   BufferedWriter pgClsOut = new BufferedWriter(new FileWriter(libClassPkg + "\\" + "Page1.java"));
+			   BufferedWriter pgClsOut = new BufferedWriter(new FileWriter(libClassPkg + "\\" + Clsnm + ".java"));
 			   String testText = buffer.toString();
 			   pgClsOut.write(testText);
 			   pgClsOut.close();
+			   return Clsnm;
 		 }else{
-			 return ichk_unit;
+			 return null;
 		 }
-		return null;		
+				
 	}
 	
 	
